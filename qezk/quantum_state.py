@@ -6,6 +6,7 @@ This module provides quantum state preparation, gate operations, and Bell state 
 
 import numpy as np
 from typing import Literal
+from .exceptions import QuantumStateError
 
 
 class QuantumStatePreparation:
@@ -80,15 +81,38 @@ class QuantumStatePreparation:
             
         Returns:
             Transformed quantum state
+            
+        Raises:
+            QuantumStateError: If gate application fails
         """
-        if qubit == 0:
-            # Apply gate to first qubit: gate ⊗ I
-            gate_full = np.kron(gate, self.I)
-        else:
-            # Apply gate to second qubit: I ⊗ gate
-            gate_full = np.kron(self.I, gate)
-        
-        return gate_full @ state
+        try:
+            # Input validation
+            if state.shape != (4,):
+                raise QuantumStateError(f"State must be 4-element array, got shape {state.shape}")
+            if gate.shape != (2, 2):
+                raise QuantumStateError(f"Gate must be 2x2 matrix, got shape {gate.shape}")
+            if qubit not in [0, 1]:
+                raise QuantumStateError(f"Qubit must be 0 or 1, got {qubit}")
+            
+            if qubit == 0:
+                # Apply gate to first qubit: gate ⊗ I
+                gate_full = np.kron(gate, self.I)
+            else:
+                # Apply gate to second qubit: I ⊗ gate
+                gate_full = np.kron(self.I, gate)
+            
+            result = gate_full @ state
+            
+            # Validate result
+            if result.shape != (4,):
+                raise QuantumStateError(f"Result shape mismatch: {result.shape}")
+            
+            return result
+            
+        except QuantumStateError:
+            raise
+        except Exception as e:
+            raise QuantumStateError(f"Gate application failed: {str(e)}") from e
     
     def normalize_state(self, state: np.ndarray) -> np.ndarray:
         """

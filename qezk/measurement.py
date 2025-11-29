@@ -7,6 +7,7 @@ for entanglement verification in the QE-ZK protocol.
 
 import numpy as np
 from typing import List, Tuple
+from .exceptions import MeasurementError
 
 
 class BellMeasurement:
@@ -58,7 +59,7 @@ class BellMeasurement:
             outcome = 0 if np.random.random() < prob_0 else 1
             
         else:
-            raise ValueError(f"Unknown basis: {basis}. Must be 'Z', 'X', or 'Y'")
+            raise MeasurementError(f"Unknown basis: {basis}. Must be 'Z', 'X', or 'Y'")
         
         return outcome
     

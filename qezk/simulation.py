@@ -7,6 +7,7 @@ This module provides simulation and testing capabilities for the QE-ZK protocol.
 import numpy as np
 from typing import List, Dict, Any, Optional
 from .protocol import QuantumEntanglementZK
+from .exceptions import ProtocolError
 
 
 class QEZKSimulation:
@@ -78,7 +79,7 @@ class QEZKSimulation:
             Dictionary containing aggregated performance metrics
         """
         if len(statements) != len(witnesses):
-            raise ValueError("statements and witnesses must have the same length")
+            raise ProtocolError("statements and witnesses must have the same length")
         
         all_results = []
         

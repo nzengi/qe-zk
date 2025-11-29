@@ -9,6 +9,7 @@ import hashlib
 import numpy as np
 from typing import List
 from .quantum_state import QuantumStatePreparation
+from .exceptions import WitnessEncodingError, ConfigurationError
 
 
 class WitnessEncoder:
@@ -78,22 +79,41 @@ class WitnessEncoder:
             
         Returns:
             List of measurement bases ('Z', 'X', or 'Y')
-        """
-        # Hash statement
-        statement_hash = hashlib.sha256(statement.encode()).digest()
-        
-        bases = []
-        for i in range(num_measurements):
-            # Use hash bits to choose basis
-            byte_index = i % len(statement_hash)
-            bit_shift = 2 * (i % 4)
-            basis_index = (statement_hash[byte_index] >> bit_shift) & 0b11
             
-            # Map to bases: 0=Z, 1=X, 2=Y, 3=Z (fallback)
-            basis_map = {0: 'Z', 1: 'X', 2: 'Y', 3: 'Z'}
-            bases.append(basis_map[basis_index])
-        
-        return bases
+        Raises:
+            WitnessEncodingError: If basis generation fails
+            ConfigurationError: If parameters are invalid
+        """
+        try:
+            # Input validation
+            if not isinstance(statement, str):
+                raise ConfigurationError(f"statement must be a string, got {type(statement)}")
+            if not isinstance(num_measurements, int) or num_measurements < 1:
+                raise ConfigurationError(f"num_measurements must be a positive integer, got {num_measurements}")
+            
+            # Hash statement
+            statement_hash = hashlib.sha256(statement.encode()).digest()
+            
+            bases = []
+            for i in range(num_measurements):
+                # Use hash bits to choose basis
+                byte_index = i % len(statement_hash)
+                bit_shift = 2 * (i % 4)
+                basis_index = (statement_hash[byte_index] >> bit_shift) & 0b11
+                
+                # Map to bases: 0=Z, 1=X, 2=Y, 3=Z (fallback)
+                basis_map = {0: 'Z', 1: 'X', 2: 'Y', 3: 'Z'}
+                bases.append(basis_map[basis_index])
+            
+            if len(bases) != num_measurements:
+                raise WitnessEncodingError(f"Generated {len(bases)} bases, expected {num_measurements}")
+            
+            return bases
+            
+        except (ConfigurationError, WitnessEncodingError):
+            raise
+        except Exception as e:
+            raise WitnessEncodingError(f"Basis generation failed: {str(e)}") from e
     
     def apply_circuit(self, state: np.ndarray, gate_sequence: List[str]) -> np.ndarray:
         """
